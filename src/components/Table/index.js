@@ -1,7 +1,8 @@
-
-
-import React, { useState } from 'react';
+import React, { useEffect, useLayoutEffect, useState } from 'react';
 import Form from '../Form';
+import { useDispatch, useSelector } from 'react-redux';
+import axios from 'axios'
+import { setItemAdded,setItemEdited,setItemDeleted } from '../../Redux/globalSlice';
 
 const ConfirmationModal = ({
   isOpen,
@@ -9,7 +10,8 @@ const ConfirmationModal = ({
   onConfirm,
   title = 'Confirm Action',
   message = '',
-  mode = 'delete', // 'delete' or 'edit'
+  mode = 'delete', 
+  itemSelectedForEdit
 }) => {
   return (
     isOpen && (
@@ -48,7 +50,7 @@ const ConfirmationModal = ({
                   <>
                     {/* Add your edit modal content here */}
                     
-                    <Form onClose={onClose}/>
+                    <Form onClose={onClose} itemSelectedForEdit={itemSelectedForEdit}/>
                   </>
                 )}
               </div>
@@ -60,7 +62,13 @@ const ConfirmationModal = ({
   );
 };
 
-const Table = ({ data = [] }) => {
+const Table = () => {
+  const dispatch = useDispatch();
+  const isItemAdded = useSelector((state) => state.global.isItemAdded);
+  const isItemEdited = useSelector((state) => state.global.isItemEdited);
+  const isItemDeleted = useSelector((state) => state.global.isItemDeleted);
+  
+  const [itemSelectedForEdit, setItemSelectedForEdit] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [itemToEdit, setItemToEdit] = useState(null);
   const [itemToDelete, setItemToDelete] = useState(null);
@@ -70,18 +78,29 @@ const Table = ({ data = [] }) => {
     setItemToDelete(item);
     setModalMode('delete');
     setShowModal(true);
+    
   };
 
   const handleEdit = (item) => {
-    setItemToEdit(item);
+    setItemSelectedForEdit(item);
     setModalMode('edit');
     setShowModal(true);
   };
 
   const confirmAction = () => {
     if (modalMode === 'delete') {
-      // Add your delete logic here
-      console.log('Deleting item:', itemToDelete);
+    
+        axios.delete(`http://localhost:5037/api/scrapper/${itemToDelete.id}`)
+          .then((response) => {
+            console.log('Item deleted successfully:', response.data);
+            // Optionally, you can update the local state to remove the deleted item
+            setData(data.filter((item) => item.id !== itemToDelete.id));
+
+            dispatch(setItemEdited((prev) => !prev));
+          })
+          .catch((error) => {
+            console.error('Error deleting item:', error);
+          });
     } else {
       // Add your edit logic here
       console.log('Editing item:', itemToEdit);
@@ -97,6 +116,22 @@ const Table = ({ data = [] }) => {
     setItemToDelete(null);
   };
 
+  const [data, setData] = useState([]);
+
+  const fetchProductData = () => {
+    fetch('http://localhost:5037/api/scrapper/products')
+      .then(response => response.json())
+      .then(data => {
+        setData(data);
+      })
+      .catch(error => {
+        console.error('Error fetching products:', error);
+      });
+  };
+
+  useEffect(() => {
+    fetchProductData();
+  }, [isItemAdded,isItemEdited,isItemDeleted]);
   return (
     <div className="overflow-x-auto">
       <table className="w-full table-auto">
@@ -151,6 +186,7 @@ const Table = ({ data = [] }) => {
         title={modalMode === 'delete' ? 'Confirm Delete' : 'Update Prodcut'}
         message={modalMode === 'delete' ? 'Are you sure you want to delete this item?' : ''}
         mode={modalMode}
+        itemSelectedForEdit={itemSelectedForEdit}
       />
     </div>
   );

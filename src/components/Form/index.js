@@ -1,4 +1,9 @@
 import React, { useState } from 'react';
+import axios from 'axios';
+import { toast } from 'react-toastify';
+import { useDispatch, useSelector } from 'react-redux';
+import { setItemAdded, setItemEdited } from '../../Redux/globalSlice';
+
 
 const FormField = ({ label, name, value, onChange, type = 'text', error }) => {
     const formatCurrency = (value) => {
@@ -60,12 +65,22 @@ const FormField = ({ label, name, value, onChange, type = 'text', error }) => {
   );
 };
 
-const Form = ({onClose}) => {
+const Form = ({onClose, itemSelectedForEdit = null}) => {
+  
+  const dispatch = useDispatch();
+  const isItemEdited = useSelector((state) => state.global.isItemEdited);
+
+  const [id, setId] = useState(itemSelectedForEdit?.id || '');
+  const [title, setTitle] = useState(itemSelectedForEdit?.title || '');
+  const [seller, setSeller] = useState(itemSelectedForEdit?.seller || '');
+  const [price, setPrice] = useState(itemSelectedForEdit?.price || '');
+  const [detail, setDetail] = useState(itemSelectedForEdit?.detail || '');
+
   const [formData, setFormData] = useState({
-    title: '',
-    seller: '',
-    price: '',
-    detail: '',
+    title: title,
+    seller: seller,
+    price: price,
+    detail: detail,
   });
   const [errors, setErrors] = useState({
     title: '',
@@ -85,7 +100,7 @@ const Form = ({onClose}) => {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     let isValid = true;
 
@@ -98,27 +113,62 @@ const Form = ({onClose}) => {
       setErrors((prev) => ({ ...prev, seller: 'Seller is required' }));
       isValid = false;
     }
-    if (!formData.price.trim() || isNaN(parseFloat(formData.price))) {
+    if (isNaN(parseFloat(formData.price))) {
       setErrors((prev) => ({ ...prev, price: 'Please enter a valid price' }));
       isValid = false;
     }
 
     if (isValid) {
-      // Handle form submission logic here
-      console.log(formData);
-      // Clear the form
-      setFormData({
-        title: '',
-        seller: '',
-        price: '',
-        detail: '',
-      });
-      setErrors({
-        title: '',
-        seller: '',
-        price: '',
-        detail: '',
-      });
+      if(itemSelectedForEdit == null)
+        {
+          try {  
+            // Update the product in the backend
+            await axios.post(`http://localhost:5037/api/scrapper`, formData);
+            toast.success('Product Added successfully');
+            dispatch(setItemAdded((prev) => !prev));
+            // Clear the form
+            setFormData({
+              title: '',
+              seller: '',
+              price: '',
+              detail: '',
+            });
+            setErrors({
+              title: '',
+              seller: '',
+              price: '',
+              detail: '',
+            });
+            onClose();
+          } catch (error) {
+            console.error(error);
+            toast.error('Error updating product');
+          }
+        } else {
+          try {  
+            // Update the product in the backend
+            await axios.put(`http://localhost:5037/api/scrapper/${id}`, formData);
+            toast.success('Product updated successfully');
+            dispatch(setItemEdited((prev) => !prev));
+            // Clear the form
+            setFormData({
+              title: '',
+              seller: '',
+              price: '',
+              detail: '',
+            });
+            setErrors({
+              title: '',
+              seller: '',
+              price: '',
+              detail: '',
+            });
+            onClose();
+          } catch (error) {
+            console.error(error);
+            toast.error('Error updating product');
+          }
+        }
     }
   };
 
@@ -135,7 +185,7 @@ const Form = ({onClose}) => {
       price: '',
       detail: '',
     });
-    onClose()
+    onClose();
   };
 
   return (
@@ -175,17 +225,23 @@ const Form = ({onClose}) => {
         <div className=' w-full flex flex-row gap-6 mx-2'>
         <button
         type="submit"
-        className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2"
+        className={`bg-blue-600  text-white  ${itemSelectedForEdit==null?'w-10px px-10 py-2':'px-4 py-2'} rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2`}
       >
         Submit
       </button>
-      <button
+      {
+        itemSelectedForEdit != null && 
+        (
+          <button
           type="button"
           onClick={handleClear}
           className="bg-gray-200 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2"
         >
           Cancel
         </button>
+        )
+      }
+
         </div>
     </form>
   );

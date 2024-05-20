@@ -1,31 +1,27 @@
-import logo from './logo.svg';
+
 import './App.css';
-import Table from './components/Table';
-import { useEffect, useState } from 'react';
+import React, { Fragment } from 'react';
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
+import Login from "./pages/Login";
+import Signup from "./pages/Register";
+import ProtectedRoute from './pages/protectedRoutes/ProtectedRoute';
+import Data from './pages/Data';
+import Navbar from './components/Navbar';
 
-function App() {
-  const [data, setData] = useState([]);
 
-  useEffect(() => {
-    fetchProductData();
-  }, []);
-
-  const fetchProductData = () => {
-    fetch('http://localhost:5037/api/scrapper/products')
-      .then(response => response.json())
-      .then(data => {
-        setData(data);
-      })
-      .catch(error => {
-        console.error('Error fetching products:', error);
-      });
-  };
-
+const App = () => {
   return (
-    <div className="App">
-      <Table data={data} />
-    </div>
+    <Router>
+
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
+        <Route path="/" element={<Login />} />
+        <Route exact path="/data" element={<ProtectedRoute><Data /></ProtectedRoute>} />
+        
+      </Routes>
+    </Router>
   );
-}
+};
 
 export default App;
