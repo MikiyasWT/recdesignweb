@@ -1,13 +1,15 @@
 import {ConfirmationModal} from '../Table/index'
 import Form from '../Form';
-import { useState, useSelector } from 'react';
+import { useState, useSelector, useEffect } from 'react';
 import Cookies from 'universal-cookie';
 import { getRoleFromToken } from '../../utils/jwtDecode';
 import { jwtDecode } from "jwt-decode";
 import axios from 'axios';
 import { setItemAdded } from '../../Redux/globalSlice';
 import { useDispatch } from 'react-redux';
-
+import {ScrapeAndStore} from "../../services/product";
+import {hasAdminRole, hasManagerRole, hasGuestRole} from "../../utils/checkRoles";
+import { setIsAdmin, setIsManager, setIsGuest } from '../../Redux/globalSlice';
 const Navbar = () => {
     const dispatch = useDispatch();
     const [addSelected, setAddSelected] = useState(false);
@@ -15,8 +17,14 @@ const Navbar = () => {
 
     const token =  cookies.get('authCookies'); // Replace with your token storage mechanism
     const decoded = jwtDecode(token);
-    
 
+    const isAdmin = hasAdminRole(decoded.roles) 
+    console.log(isAdmin) 
+    const isManager = hasManagerRole(decoded.roles);
+    const isGuest = hasGuestRole(decoded.roles);
+    dispatch(setIsGuest(isGuest));
+    dispatch(setIsAdmin(isAdmin)); 
+    dispatch(setIsManager(isManager));
     const openAddingModal = () => {
         setAddSelected((prev) => !prev);
     }
@@ -28,15 +36,18 @@ const Navbar = () => {
 
 const startScrapping = async () => {
     try {
-        const url = 'http://localhost:5037/api/scrapper?pageCount=1'; // Replace with your actual URL
-        const response = await axios.get(url);
-        console.log(response.data); 
+      const response = await ScrapeAndStore();
         dispatch(setItemAdded((prev) => !prev));
+
+
+        
       } catch (error) {
         console.error('Error fetching data:', error);
         // Handle any errors that might occur during the request
       }
 }
+
+
     return(
 <nav class="bg-white border-gray-200 dark:bg-gray-900 w-full mb-4">
     <div class="w-full flex flex-wrap justify-between items-center mx-auto  p-4 ">
@@ -45,12 +56,24 @@ const startScrapping = async () => {
             <span class="self-center text-2xl font-semibold whitespace-nowrap dark:text-white">Recognise Design</span>
         </a>
         <div class="flex items-center space-x-6 rtl:space-x-reverse">
+          <span class="text-sm  text-blue-600 dark:text-blue-500 hover:underline">
+           {decoded.roles[0]}
+          </span>
             <a href="#" onClick={handleLogout} class="text-sm  text-blue-600 dark:text-blue-500 hover:underline">Logout</a>
         </div>
     </div>
     <div class="w-full flex flex-wrap justify-end items-center mx-auto  p-4 bg-gray-300">
-       <button onClick={startScrapping} type="button" class="text-white mx-4 flex flex-row justify- bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">Run Scrapping</button>
-       <button onClick={openAddingModal} type="button" class="text-white flex flex-row justify- bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">Add Product</button>
+      {
+        isAdmin && (<button onClick={startScrapping} type="button" class="text-white mx-4 flex flex-row justify- bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">Run Scrapping</button>)
+      }
+      {
+        isAdmin &&  (<button onClick={openAddingModal} type="button" class="text-white flex flex-row justify- bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">Add Product</button>)
+      }
+      {
+        isManager &&  (<button onClick={openAddingModal} type="button" class="text-white flex flex-row justify- bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">Add Product</button>)
+      }
+       
+       
     </div>
 
 {
@@ -86,6 +109,13 @@ const startScrapping = async () => {
 }
 
 export default Navbar;
+
+
+
+
+
+
+
 
 
 

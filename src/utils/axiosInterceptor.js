@@ -1,6 +1,6 @@
 import axios from 'axios';
-import { Cookies } from 'universal-cookie';
-
+//import { Cookies } from 'universal-cookie';
+import Cookies from 'universal-cookie';
 const cookies = new Cookies();
 
 // Add a request interceptor
@@ -10,6 +10,7 @@ axios.interceptors.request.use(
     
     if (authToken) {
       config.headers.Authorization = `Bearer ${authToken}`;
+      console.log(config.headers.Authorization);
     }
 
     return config;

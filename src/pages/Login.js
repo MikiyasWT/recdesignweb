@@ -2,23 +2,26 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import Cookies from 'universal-cookie';
 import { useNavigate } from 'react-router-dom';
+import { loginApi} from "../services/auth";
 
 const Login = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
-
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsLoading(true);
 
     try {
-      const response = await axios.post('http://localhost:5037/api/authentication/login', {
+      const response = await loginApi({
         username,
         password,
       });
-console.log(response)
+      const data = response.data;
+      const success = data.success;
       if (response.status === 200) {
         const token = response.data.token;
         const cookies = new Cookies();
@@ -29,9 +32,13 @@ console.log(response)
         // Handle login error
         setError(response.data.message);
       }
-    } catch (err) {
+    } catch (error) {
       setError('Invalid credentials, Please try again.');
+
+    }finally {
+      setIsLoading(false);
     }
+
   };
 
   return (

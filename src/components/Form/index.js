@@ -3,7 +3,7 @@ import axios from 'axios';
 import { toast } from 'react-toastify';
 import { useDispatch, useSelector } from 'react-redux';
 import { setItemAdded, setItemEdited } from '../../Redux/globalSlice';
-
+import {AddProduct, updateProduct} from "../../services/product";
 
 const FormField = ({ label, name, value, onChange, type = 'text', error }) => {
     const formatCurrency = (value) => {
@@ -122,8 +122,9 @@ const Form = ({onClose, itemSelectedForEdit = null}) => {
       if(itemSelectedForEdit == null)
         {
           try {  
-            // Update the product in the backend
-            await axios.post(`http://localhost:5037/api/scrapper`, formData);
+            const response = await AddProduct(formData);
+            const data = response.data;
+            const success = data.success;
             toast.success('Product Added successfully');
             dispatch(setItemAdded((prev) => !prev));
             // Clear the form
@@ -146,8 +147,10 @@ const Form = ({onClose, itemSelectedForEdit = null}) => {
           }
         } else {
           try {  
-            // Update the product in the backend
-            await axios.put(`http://localhost:5037/api/scrapper/${id}`, formData);
+            const response = await updateProduct(formData, id);
+            const data = response.data;
+            const success = data.success;
+          
             toast.success('Product updated successfully');
             dispatch(setItemEdited((prev) => !prev));
             // Clear the form
@@ -167,6 +170,13 @@ const Form = ({onClose, itemSelectedForEdit = null}) => {
           } catch (error) {
             console.error(error);
             toast.error('Error updating product');
+
+            setErrors({
+              title: '',
+              seller: '',
+              price: '',
+              detail: '',
+            });
           }
         }
     }

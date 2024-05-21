@@ -3,6 +3,10 @@ import Form from '../Form';
 import { useDispatch, useSelector } from 'react-redux';
 import axios from 'axios'
 import { setItemAdded,setItemEdited,setItemDeleted } from '../../Redux/globalSlice';
+import {fetchProducts, deleteProduct} from "../../services/product"
+import Cookies from 'universal-cookie';
+import { jwtDecode } from "jwt-decode";
+import {hasAdminRole, hasManagerRole, hasGuestRole} from "../../utils/checkRoles";
 
 const ConfirmationModal = ({
   isOpen,
@@ -67,12 +71,16 @@ const Table = () => {
   const isItemAdded = useSelector((state) => state.global.isItemAdded);
   const isItemEdited = useSelector((state) => state.global.isItemEdited);
   const isItemDeleted = useSelector((state) => state.global.isItemDeleted);
+  // const isAdmin = useSelector((state) => state.global.isAdmin);
+  // const isManager = useSelector((state) => state.global.isManager);
+  // const isGuest = useSelector((state) => state.global.isGuest)
   
   const [itemSelectedForEdit, setItemSelectedForEdit] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [itemToEdit, setItemToEdit] = useState(null);
   const [itemToDelete, setItemToDelete] = useState(null);
   const [modalMode, setModalMode] = useState('delete');
+  const cookies = new Cookies();
 
   const handleDelete = (item) => {
     setItemToDelete(item);
@@ -87,20 +95,20 @@ const Table = () => {
     setShowModal(true);
   };
 
-  const confirmAction = () => {
+  const confirmAction = async () => {
     if (modalMode === 'delete') {
-    
-        axios.delete(`http://localhost:5037/api/scrapper/${itemToDelete.id}`)
-          .then((response) => {
-            console.log('Item deleted successfully:', response.data);
-            // Optionally, you can update the local state to remove the deleted item
-            setData(data.filter((item) => item.id !== itemToDelete.id));
-
-            dispatch(setItemEdited((prev) => !prev));
-          })
-          .catch((error) => {
-            console.error('Error deleting item:', error);
-          });
+            try {
+              const response = await deleteProduct(itemToDelete.id);
+              setData(response.data);
+              console.log('Item deleted successfully:', response.data);
+              // Optionally, you can update the local state to remove the deleted item
+              
+  
+              dispatch(setItemDeleted(prev => !prev));
+            } catch (error) {
+              console.error('Unable to delete user:', error);
+            }
+          
     } else {
       // Add your edit logic here
       console.log('Editing item:', itemToEdit);
@@ -116,17 +124,24 @@ const Table = () => {
     setItemToDelete(null);
   };
 
+  const token =  cookies.get('authCookies'); // Replace with your token storage mechanism
+  const decoded = jwtDecode(token);
+
+  const isAdmin = hasAdminRole(decoded.roles)  
+  const isManager = hasManagerRole(decoded.roles);
+  const isGuest = hasGuestRole(decoded.roles);
+
+
+
   const [data, setData] = useState([]);
 
-  const fetchProductData = () => {
-    fetch('http://localhost:5037/api/scrapper/products')
-      .then(response => response.json())
-      .then(data => {
-        setData(data);
-      })
-      .catch(error => {
-        console.error('Error fetching products:', error);
-      });
+  const fetchProductData = async () => {
+    try {
+      const responseData = await fetchProducts();
+      setData(responseData.data);
+    } catch (error) {
+      // Handle error
+    }
   };
 
   useEffect(() => {
@@ -148,25 +163,43 @@ const Table = () => {
         <tbody>
           {data.length > 0 ? (
             data.map((item, index) => (
-              <tr key={index} className="border-b">
+              <tr key={index} className="border-b ">
                 <td className="px-4 py-2">{index + 1}</td>
                 <td className="px-4 py-2">{item.title}</td>
                 <td className="px-4 py-2">{item.seller}</td>
                 <td className="px-4 py-2">{item.price}</td>
                 <td className="px-4 py-2">
-                  <button 
-                     className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-                     onClick={() => handleEdit(item)} >
-                    Edit
-                  </button>
+                  {
+                    isAdmin && (
+                      <button 
+                      className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+                      onClick={() => handleEdit(item)} >
+                     Edit
+                   </button>
+                    ) 
+                  }
+                                    {
+                    isManager && (
+                      <button 
+                      className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+                      onClick={() => handleEdit(item)} >
+                     Edit
+                   </button>
+                    ) 
+                  }
+
                 </td>
                 <td className="px-4 py-2">
-                  <button
-                    className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
-                    onClick={() => handleDelete(item)}
-                  >
-                    Delete
-                  </button>
+                  {
+                    isAdmin && (                
+                       <button
+                      className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
+                      onClick={() => handleDelete(item)}
+                    >
+                      Delete
+                    </button>)
+                  }
+ 
                 </td>
               </tr>
             ))

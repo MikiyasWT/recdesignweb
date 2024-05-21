@@ -1,6 +1,7 @@
 import React, {useState} from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { registerApi } from '../services/auth';
 
 const Signup = () => {
     const navigate = useNavigate();
@@ -29,23 +30,15 @@ const Signup = () => {
     
         try {
             
-          const response = await axios.post('http://localhost:5037/api/authentication', {
-            ...formData,
-            roles: ['Guest'], // Add default role as Guest
-          });
+          const response = await registerApi({...formData,roles: ['Guest'],})
 
-          if(response.status >= 200 && response.status < 300)
-            {
-                console.log('User registered successfully:', response.data);
-                navigate('/login');
-                // Handle successful registration (e.g., redirect to login page)
-            }
-            else {
-                throw new Error('Failed to register user: ' + response.data.message);
-            }
-    
-
-        } catch (error) {
+            if(response.status >= 200 && response.status < 300)
+                {
+                    console.log('User registered successfully:', response.data);
+                    navigate('/login');
+                  }
+            else {throw new Error('Failed to register user: ' + response.data.message);}
+          } catch (error) {
           console.error('Error registering user:', error);
           // Handle registration errors (e.g., display error message to user)
         }

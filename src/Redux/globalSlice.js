@@ -5,7 +5,10 @@ const globalSlice = createSlice({
   initialState: {
     isItemAdded: false,
     isItemDeleted:false,
-    isItemEdited:false
+    isItemEdited:false,
+    isAdmin:false,
+    isManager:false,
+    isGuest:false
   },
   reducers: {
     setItemAdded: (state, action) => {
@@ -17,8 +20,17 @@ const globalSlice = createSlice({
     setItemEdited: (state, action) => {
       state.isItemEdited = action.payload;
       },
+      setIsAdmin: (state, action) => {
+        state.isAdmin = action.payload;
+        },
+        setIsManager: (state, action) => {
+          state.isManager = action.payload;
+          },
+          setIsGuest: (state, action) => {
+            state.isGuest = action.payload;
+            },
   },
 });
 
-export const { setItemAdded,setItemEdited,setItemDeleted } = globalSlice.actions;
+export const { setItemAdded,setItemEdited,setItemDeleted, setIsAdmin, setIsManager,setIsGuest  } = globalSlice.actions;
 export default globalSlice.reducer;
